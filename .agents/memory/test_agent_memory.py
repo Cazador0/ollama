@@ -101,6 +101,8 @@ class CLITest(Sandbox):
         out = self.cli("task", "new", "--harness", "zed", "--title", "write regression test", "--brief", "cover the 8k OOM")
         tid = out.split()[1]
         self.assertIn("--task %s" % tid, out)
+        self.assertIn('ollama launch pi -- -p "$(', out)
+        self.assertIn("task brief %s)" % tid, out)
 
         main_pi = self.sid(self.cli("start", "--title", "pi main session"))
         child = self.sid(self.cli("start", "--role", "sub", "--task", tid, "--title", "write regression test"))

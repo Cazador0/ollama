@@ -530,8 +530,11 @@ def op_task_create(store, sid, title, brief_text):
              "parent_session": sid, "created": now()}
         store.save_task(t)
         store.append(sid, "task", "created %s: %s" % (tid, title), refs=[tid])
-    return "task %s created. Give the sub-agent this prompt (`%s task brief %s` prints it again):\n\n%s" % (
-        tid, command(), tid, task_prompt(store, t))
+    # pi takes a prompt after `--` and -p runs it to completion without a TUI;
+    # `ollama launch pi -- ...` forwards everything after its own `--` to pi.
+    launch = "cd %s && ollama launch pi -- -p \"$(%s task brief %s)\"" % (shlex.quote(store.project), command(), tid)
+    return "task %s created.\n\nRun the sub-agent with:\n  %s\n\nIts prompt (`%s task brief %s` prints it again):\n\n%s" % (
+        tid, launch, command(), tid, task_prompt(store, t))
 
 
 def op_task_complete(store, tid, result, status="done"):
@@ -658,9 +661,10 @@ is what carries the work forward. Follow it on every session:
    a handoff: goal, current state, decisions, next steps, open questions
    (`memory_handoff` or `agent-mem handoff`).
 5. To delegate, create a task (`memory_task_create` or `agent-mem task new`)
-   and give the sub-agent the prompt it returns. Read the outcome with
-   `memory_task_show`. Sub-agents pass `--task <id>` on every command and
-   finish with `agent-mem task done <id> --result "..."`.
+   and run the command it prints, which starts pi on the task's prompt:
+   `ollama launch pi -- -p "$(agent-mem task brief <id>)"`. Read the outcome
+   with `memory_task_show`. Sub-agents pass `--task <id>` on every command
+   and finish with `agent-mem task done <id> --result "..."`.
 6. Never log secrets, tokens or credentials.
 """
 
